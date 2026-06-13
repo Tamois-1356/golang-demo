@@ -1,1 +1,127 @@
+package main
 
+import "fmt"
+
+// Doubly Linked List Node
+
+type node struct {
+	key        string
+	value      string
+	prev, next *node
+}
+
+// LRUCache
+
+// LRUCache is a fixed-capacity cache that evicts the least-recently-used entry
+// when a new key is inserted beyond capacity.
+type LRUCache struct {
+	capacity int
+	items    map[string]*node
+	head     *node
+	tail     *node
+}
+
+// New creates a new LRUCache with the given capacity (must be > 0).
+func New(capacity int) *LRUCache {
+	if capacity <= 0 {
+		panic("capacity must be > 0")
+	}
+	head := &node{}
+	tail := &node{}
+	head.next = tail
+	tail.prev = head
+	return &LRUCache{
+		capacity: capacity,
+		items:    make(map[string]*node, capacity),
+		head:     head,
+		tail:     tail,
+	}
+}
+
+// Get returns the value for key and an ok flag.
+// The accessed entry is promoted to MRU position.
+func (c *LRUCache) Get(key string) (string, bool) {
+	n, ok := c.items[key]
+	if !ok {
+		return "", false
+	}
+	c.moveToFront(n)
+	return n.value, true
+}
+
+// Put inserts or updates the key-value pair.
+// The entry becomes the MRU. If the cache is full, the LRU entry is evicted.
+func (c *LRUCache) Put(key, value string) {
+	if n, ok := c.items[key]; ok {
+		// Update existing node and promote it
+		n.value = value
+		c.moveToFront(n)
+		return
+	}
+	// Insert new node at front (MRU)
+	n := &node{key: key, value: value}
+	c.items[key] = n
+	c.addToFront(n)
+
+	// Evict LRU if over capacity
+	if len(c.items) > c.capacity {
+		lru := c.removeTail()
+		delete(c.items, lru.key)
+	}
+}
+
+// Private helpers
+
+// addToFront inserts n right after the dummy head.
+func (c *LRUCache) addToFront(n *node) {
+	n.prev = c.head
+	n.next = c.head.next
+	c.head.next.prev = n
+	c.head.next = n
+}
+
+// removeNode unlinks n from the list without freeing it.
+func (c *LRUCache) removeNode(n *node) {
+	n.prev.next = n.next
+	n.next.prev = n.prev
+}
+
+// moveToFront moves an existing node to the MRU position.
+func (c *LRUCache) moveToFront(n *node) {
+	c.removeNode(n)
+	c.addToFront(n)
+}
+
+// removeTail removes and returns the LRU node (node just before dummy tail).
+func (c *LRUCache) removeTail() *node {
+	lru := c.tail.prev
+	c.removeNode(lru)
+	return lru
+}
+
+// Test
+
+func main() {
+	cache := New(3)
+
+	cache.Put("a", "1")
+	cache.Put("b", "2")
+	cache.Put("c", "3")
+
+	if v, ok := cache.Get("a"); ok {
+		fmt.Println("a:", v)
+	}
+
+
+	cache.Put("d", "4")
+
+	if _, ok := cache.Get("b"); !ok {
+		fmt.Println("b: evicted")
+	}
+	if v, ok := cache.Get("c"); ok {
+		fmt.Println("c:", v)
+	}
+	if v, ok := cache.Get("d"); ok {
+		fmt.Println("d:", v)
+	}
+}
