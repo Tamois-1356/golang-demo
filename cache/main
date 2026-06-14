@@ -1,4 +1,4 @@
-package main
+package cache
 
 import "fmt"
 
@@ -12,8 +12,8 @@ type node struct {
 
 // LRUCache
 
-// LRUCache is a fixed-capacity cache that evicts the least-recently-used entry
-// when a new key is inserted beyond capacity.
+// LRUCache là một bộ nhớ đệm có dung lượng cố định, sẽ loại bỏ mục được sử dụng ít nhất gần đây
+// khi một khóa mới được chèn vượt quá dung lượng.
 type LRUCache struct {
 	capacity int
 	items    map[string]*node
@@ -21,7 +21,7 @@ type LRUCache struct {
 	tail     *node
 }
 
-// New creates a new LRUCache with the given capacity (must be > 0).
+// Tạo mới một LRUCache mới với dung lượng cho trước (phải > 0).
 func New(capacity int) *LRUCache {
 	if capacity <= 0 {
 		panic("capacity must be > 0")
@@ -38,8 +38,8 @@ func New(capacity int) *LRUCache {
 	}
 }
 
-// Get returns the value for key and an ok flag.
-// The accessed entry is promoted to MRU position.
+// Get trả về giá trị cho key và một cờ ok.
+// Mục được truy cập sẽ được đưa lên vị trí MRU.
 func (c *LRUCache) Get(key string) (string, bool) {
 	n, ok := c.items[key]
 	if !ok {
@@ -49,21 +49,21 @@ func (c *LRUCache) Get(key string) (string, bool) {
 	return n.value, true
 }
 
-// Put inserts or updates the key-value pair.
-// The entry becomes the MRU. If the cache is full, the LRU entry is evicted.
+// Thêm hoặc cập nhật cặp khóa-giá trị.
+// Mục này sẽ trở thành mục được sử dụng gần nhất. Nếu bộ nhớ đệm đầy, mục ít sử dụng nhất sẽ bị loại bỏ.
 func (c *LRUCache) Put(key, value string) {
 	if n, ok := c.items[key]; ok {
-		// Update existing node and promote it
+		// Cập nhật node hiện có và nâng cấp nó
 		n.value = value
 		c.moveToFront(n)
 		return
 	}
-	// Insert new node at front (MRU)
+	// Chèn nút mới ở đầu (MRU)
 	n := &node{key: key, value: value}
 	c.items[key] = n
 	c.addToFront(n)
 
-	// Evict LRU if over capacity
+	// Đuổi phần ít dùng nhất nếu vượt quá dung lượng
 	if len(c.items) > c.capacity {
 		lru := c.removeTail()
 		delete(c.items, lru.key)
@@ -72,7 +72,7 @@ func (c *LRUCache) Put(key, value string) {
 
 // Private helpers
 
-// addToFront inserts n right after the dummy head.
+// addToFront chèn n ngay sau đầu giả.
 func (c *LRUCache) addToFront(n *node) {
 	n.prev = c.head
 	n.next = c.head.next
@@ -80,19 +80,19 @@ func (c *LRUCache) addToFront(n *node) {
 	c.head.next = n
 }
 
-// removeNode unlinks n from the list without freeing it.
+// removeNode tách n ra khỏi danh sách mà không giải phóng nó.
 func (c *LRUCache) removeNode(n *node) {
 	n.prev.next = n.next
 	n.next.prev = n.prev
 }
 
-// moveToFront moves an existing node to the MRU position.
+// moveToFront di chuyển một nút hiện có đến vị trí MRU.
 func (c *LRUCache) moveToFront(n *node) {
 	c.removeNode(n)
 	c.addToFront(n)
 }
 
-// removeTail removes and returns the LRU node (node just before dummy tail).
+// removeTail xóa và trả về node LRU (node ngay trước đuôi giả).
 func (c *LRUCache) removeTail() *node {
 	lru := c.tail.prev
 	c.removeNode(lru)
